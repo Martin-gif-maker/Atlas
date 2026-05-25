@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Atlas{% endblock %}
+{% block body_class %}page-dash{% endblock %}
+{% block content %}
+{% with active='dash' %}{% include "_appnav.html" %}{% endwith %}
+
+<main class="dashboard">
+  <h1 class="dash-hello">Hello, {{ user.display_name or user.username }}.</h1>
+  <p class="dash-sub">Pick a mode to get started.</p>
+
+  <div class="dash-grid">
+    <a href="/app/voice" class="dash-card mode-voice">
+      <div class="mode-icon">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+      </div>
+      <div class="dash-card-text">
+        <h3>Voice</h3>
+        <p>Talk with Atlas. Hold the mic, speak naturally, hear the answer.</p>
+      </div>
+    </a>
+    <a href="/app/doc" class="dash-card mode-doc">
+      <div class="mode-icon">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+      </div>
+      <div class="dash-card-text">
+        <h3>Documents</h3>
+        <p>Upload a PDF and ask anything. Answers grounded in your file.</p>
+      </div>
+    </a>
+    <a href="/app/study" class="dash-card mode-study">
+      <div class="mode-icon">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </div>
+      <div class="dash-card-text">
+        <h3>Study</h3>
+        <p>Paste your notes. Get flashcards. Review with smooth flips.</p>
+      </div>
+    </a>
+    <a href="/app/interview" class="dash-card mode-interview">
+      <div class="mode-icon">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/><circle cx="19" cy="6" r="2"/></svg>
+      </div>
+      <div class="dash-card-text">
+        <h3>Interview</h3>
+        <p>Practice for any role. Atlas plays the interviewer.</p>
+      </div>
+    </a>
+  </div>
+</main>
+{% endblock %}

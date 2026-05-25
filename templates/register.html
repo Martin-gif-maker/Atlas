@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Create account · Atlas{% endblock %}
+{% block content %}
+<div class="auth-shell">
+  <div class="auth-card">
+    <a href="/" class="logo">
+      <svg viewBox="0 0 24 24" width="22" height="22"><defs><linearGradient id="al2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient></defs><circle cx="12" cy="12" r="9" fill="url(#al2)"/></svg>
+      <span>Atlas</span>
+    </a>
+    <h1>Create your account</h1>
+    <p class="subtitle">Free forever — bring your own keys.</p>
+    {% if error %}<div class="error-banner">{{ error }}</div>{% endif %}
+    <form method="post" action="/register" autocomplete="on">
+      <label>Display name
+        <input type="text" name="display_name" placeholder="Martin" />
+      </label>
+      <label>Username
+        <input type="text" name="username" required minlength="3" autofocus />
+      </label>
+      <label>Password
+        <input type="password" name="password" required minlength="6" />
+      </label>
+      <button class="btn primary" type="submit">Create account</button>
+    </form>
+    <p class="auth-foot">
+      Already have one? <a href="/login">Sign in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

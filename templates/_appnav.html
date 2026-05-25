@@ -1,0 +1,20 @@
+{# Reusable app nav, included in dashboard + mode pages #}
+<nav class="app-nav">
+  <a href="/app" class="logo">
+    <svg viewBox="0 0 24 24" width="22" height="22"><defs><linearGradient id="nl" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient></defs><circle cx="12" cy="12" r="9" fill="url(#nl)"/></svg>
+    <span>Atlas</span>
+  </a>
+  <div class="app-nav-mid">
+    <a href="/app"           class="{% if active=='dash' %}active{% endif %}">Home</a>
+    <a href="/app/voice"     class="{% if active=='voice' %}active{% endif %}">Voice</a>
+    <a href="/app/doc"       class="{% if active=='doc' %}active{% endif %}">Documents</a>
+    <a href="/app/study"     class="{% if active=='study' %}active{% endif %}">Study</a>
+    <a href="/app/interview" class="{% if active=='interview' %}active{% endif %}">Interview</a>
+  </div>
+  <div class="app-nav-right">
+    <span class="user-chip">{{ user.display_name or user.username }}</span>
+    <form method="post" action="/logout" style="margin:0;">
+      <button class="btn ghost small" type="submit">Sign out</button>
+    </form>
+  </div>
+</nav>

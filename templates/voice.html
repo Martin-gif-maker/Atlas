@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Voice · Atlas{% endblock %}
+{% block body_class %}page-voice{% endblock %}
+{% block content %}
+{% with active='voice' %}{% include "_appnav.html" %}{% endwith %}
+
+<div class="mode-page">
+  <aside class="mode-side">
+    <div class="side-head">
+      <h2>Voice chats</h2>
+      <button id="new-btn" class="btn ghost small">+ New</button>
+    </div>
+    <div id="side-list" class="side-list"></div>
+  </aside>
+
+  <main class="mode-main">
+    <div class="mode-head">
+      <h1 id="chat-title">New conversation</h1>
+      <div class="head-actions">
+        <label class="toggle"><input type="checkbox" id="speak-toggle" checked /> Speak replies</label>
+        <select id="voice-select"></select>
+      </div>
+    </div>
+
+    <div id="messages" class="messages">
+      <div class="empty">
+        <div class="big-icon">🎙️</div>
+        <h3>Say hello</h3>
+        <p>Press the mic and speak, or type below.</p>
+      </div>
+    </div>
+
+    <div id="status" class="status-line"></div>
+
+    <form id="composer" class="composer" autocomplete="off">
+      <button type="button" id="mic-btn" class="icon-btn" title="Record">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+      </button>
+      <input type="text" id="text-input" placeholder="Type a message, or hold the mic to talk…" />
+      <button type="submit" id="send-btn" class="icon-btn send" title="Send">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 11.5 21 3l-8.5 18-2.4-7.6L3 11.5z"/></svg>
+      </button>
+    </form>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/chat-core.js"></script>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const core = ChatCore({
+    mode: "voice",
+    els: {
+      messages:    $("#messages"),
+      status:      $("#status"),
+      micBtn:      $("#mic-btn"),
+      sendBtn:     $("#send-btn"),
+      input:       $("#text-input"),
+      sideList:    $("#side-list"),
+      chatTitle:   $("#chat-title"),
+      voiceSelect: $("#voice-select"),
+      speakToggle: $("#speak-toggle"),
+    },
+    emptyHTML: `<div class="empty"><div class="big-icon">🎙️</div><h3>Say hello</h3><p>Press the mic and speak, or type below.</p></div>`,
+  });
+
+  $("#composer").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const t = $("#text-input").value.trim();
+    if (!t) return;
+    $("#text-input").value = "";
+    core.sendText(t);
+  });
+  $("#mic-btn").addEventListener("click", () => {
+    if (document.querySelector(".icon-btn.recording")) core.stopRec();
+    else core.startRec();
+  });
+  $("#new-btn").addEventListener("click", () => core.resetView());
+  core.refreshList();
+})();
+</script>
+{% endblock %}

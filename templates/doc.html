@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Documents · Atlas{% endblock %}
+{% block body_class %}page-doc{% endblock %}
+{% block content %}
+{% with active='doc' %}{% include "_appnav.html" %}{% endwith %}
+
+<div class="mode-page">
+  <aside class="mode-side">
+    <div class="side-head">
+      <h2>Documents</h2>
+      <label for="file-input" class="btn ghost small" style="cursor:pointer;">+ Upload</label>
+      <input id="file-input" type="file" accept="application/pdf" style="display:none;" />
+    </div>
+    <div id="doc-list" class="side-list"></div>
+
+    <div class="side-head" style="border-top:1px solid var(--line);">
+      <h2>Chats</h2>
+    </div>
+    <div id="conv-list" class="side-list" style="flex:1;"></div>
+  </aside>
+
+  <main class="mode-main">
+    <div class="mode-head">
+      <h1 id="chat-title">Pick a document</h1>
+      <div class="head-actions">
+        <span id="doc-meta" style="color: var(--text-mute); font-size: 13px;"></span>
+      </div>
+    </div>
+
+    <div id="messages" class="messages">
+      <div class="empty">
+        <div class="big-icon">📄</div>
+        <h3>Drop a PDF to start</h3>
+        <p>Upload a document on the left, then ask anything about it.</p>
+        <label for="file-input" class="upload-zone" style="margin-top:24px;display:block;cursor:pointer;">
+          <div class="big-arrow">⬆︎</div>
+          Click here to upload a PDF
+          <div style="font-size:12px;margin-top:6px;color:var(--text-mute);">Up to 25 MB · text-based PDFs only</div>
+        </label>
+      </div>
+    </div>
+
+    <div id="status" class="status-line"></div>
+
+    <form id="composer" class="composer" autocomplete="off" style="display:none;">
+      <input type="text" id="text-input" placeholder="Ask about this document…" />
+      <button type="submit" id="send-btn" class="icon-btn send" title="Send">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 11.5 21 3l-8.5 18-2.4-7.6L3 11.5z"/></svg>
+      </button>
+    </form>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/chat-core.js"></script>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const fileInput = $("#file-input");
+  const docList = $("#doc-list");
+  let activeDocId = null;
+  let documents = [];
+
+  const core = ChatCore({
+    mode: "doc",
+    els: {
+      messages:  $("#messages"),
+      status:    $("#status"),
+      sendBtn:   $("#send-btn"),
+      input:     $("#text-input"),
+      sideList:  $("#conv-list"),
+      chatTitle: $("#chat-title"),
+    },
+    beforeSend: () => activeDocId ? { document_id: activeDocId } : {},
+    onConvLoaded: (conv) => {
+      activeDocId = conv.document_id || null;
+      const composer = $("#composer");
+      composer.style.display = activeDocId ? "flex" : "none";
+      const doc = documents.find((d) => d.id === activeDocId);
+      $("#doc-meta").textContent = doc ? `${doc.title} · ${doc.page_count} pages` : "";
+    },
+    emptyHTML: `<div class="empty"><div class="big-icon">📄</div><h3>Pick a document on the left</h3><p>Or upload a new one to begin.</p></div>`,
+  });
+
+  async function refreshDocs() {
+    const r = await fetch("/api/documents");
+    if (!r.ok) return;
+    const data = await r.json();
+    documents = data.documents;
+    docList.innerHTML = "";
+    if (!documents.length) {
+      docList.innerHTML = '<div class="side-empty">No documents yet.</div>';
+      return;
+    }
+    for (const d of documents) {
+      const row = document.createElement("div");
+      row.className = "side-item" + (d.id === activeDocId ? " active" : "");
+      row.innerHTML = `<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">📄 ${d.title}</span><button class="x" title="Delete">×</button>`;
+      row.addEventListener("click", (e) => {
+        if (e.target.classList.contains("x")) return;
+        startDocChat(d);
+      });
+      row.querySelector(".x").addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (!confirm(`Delete "${d.title}" and all its chats?`)) return;
+        await fetch(`/api/documents/${d.id}`, { method: "DELETE" });
+        if (d.id === activeDocId) {
+          activeDocId = null;
+          core.resetView();
+          $("#composer").style.display = "none";
+          $("#doc-meta").textContent = "";
+        }
+        refreshDocs();
+        core.refreshList();
+      });
+      docList.appendChild(row);
+    }
+  }
+
+  function startDocChat(doc) {
+    activeDocId = doc.id;
+    core.setActiveConv(null);
+    $("#chat-title").textContent = `Chatting with ${doc.title}`;
+    $("#doc-meta").textContent = `${doc.title} · ${doc.page_count} pages`;
+    $("#composer").style.display = "flex";
+    core.resetView();
+    $("#messages").innerHTML = `<div class="empty"><div class="big-icon">📄</div><h3>${doc.title}</h3><p>Ask anything about this document.</p></div>`;
+    refreshDocs();
+  }
+
+  fileInput.addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    core.setStatus(`Uploading ${f.name}…`);
+    const fd = new FormData();
+    fd.append("file", f);
+    const r = await fetch("/api/documents/upload", { method: "POST", body: fd });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      core.setStatus("Upload failed: " + (err.detail || r.status), "error");
+      return;
+    }
+    const doc = await r.json();
+    core.setStatus(`Uploaded "${doc.title}" — ${doc.page_count} pages.`);
+    fileInput.value = "";
+    await refreshDocs();
+    startDocChat(doc);
+  });
+
+  $("#composer").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const t = $("#text-input").value.trim();
+    if (!t) return;
+    if (!activeDocId) { core.setStatus("Pick a document first.", "error"); return; }
+    $("#text-input").value = "";
+    core.sendText(t);
+  });
+
+  refreshDocs();
+  core.refreshList();
+})();
+</script>
+{% endblock %}

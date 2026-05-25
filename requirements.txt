@@ -1,0 +1,28 @@
+# Atlas — Python dependencies
+# Install with: pip install -r requirements.txt
+
+# Web framework
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+
+# Templating + forms
+jinja2>=3.1.0
+python-multipart>=0.0.9
+
+# Settings & environment
+pydantic-settings>=2.2.0
+python-dotenv>=1.0.0
+
+# AI services
+openai>=1.30.0
+groq>=0.9.0
+
+# PDF text extraction
+pymupdf>=1.24.0
+
+# Auth
+bcrypt>=4.1.0
+itsdangerous>=2.1.0
+
+# Production WSGI server (used by Render / Railway Procfile)
+gunicorn>=22.0.0

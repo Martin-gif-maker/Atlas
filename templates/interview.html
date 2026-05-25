@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Interview · Atlas{% endblock %}
+{% block body_class %}page-interview{% endblock %}
+{% block content %}
+{% with active='interview' %}{% include "_appnav.html" %}{% endwith %}
+
+<div class="mode-page">
+  <aside class="mode-side">
+    <div class="side-head">
+      <h2>Sessions</h2>
+      <button id="new-btn" class="btn ghost small">+ New</button>
+    </div>
+    <div id="side-list" class="side-list"></div>
+  </aside>
+
+  <main class="mode-main">
+    <div class="mode-head">
+      <h1 id="chat-title">Interview practice</h1>
+      <div class="head-actions">
+        <label class="toggle"><input type="checkbox" id="speak-toggle" checked /> Speak questions</label>
+        <select id="voice-select"></select>
+      </div>
+    </div>
+
+    <div id="messages" class="messages">
+      <div class="empty">
+        <div class="big-icon">🎤</div>
+        <h3>Pick a role to practice</h3>
+        <p>Atlas will play the interviewer.</p>
+        <div class="interview-start" style="margin: 28px auto 0; max-width: 460px; text-align: left;">
+          <h2 style="font-size: 22px;">What role are you preparing for?</h2>
+          <p style="font-size: 14px;">Be specific — "Junior Backend Engineer (Python)" works better than just "Engineer".</p>
+          <input type="text" id="role-input" placeholder="e.g. Junior AI Engineer"
+                 style="width:100%;background:var(--ink-3);border:1px solid var(--line);color:var(--text);border-radius:var(--radius-sm);padding:12px 14px;font-size:15px;font-family:inherit;outline:none;" />
+          <div class="role-suggest">
+            <button class="role-chip" data-r="Junior AI Engineer">Junior AI Engineer</button>
+            <button class="role-chip" data-r="Frontend Developer (React)">Frontend Developer</button>
+            <button class="role-chip" data-r="Data Scientist">Data Scientist</button>
+            <button class="role-chip" data-r="Product Manager">Product Manager</button>
+            <button class="role-chip" data-r="Backend Engineer (Python)">Backend Engineer</button>
+          </div>
+          <button id="start-btn" class="btn primary" style="margin-top: 18px; width: 100%;">Start interview</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="status" class="status-line"></div>
+
+    <form id="composer" class="composer" autocomplete="off" style="display:none;">
+      <button type="button" id="mic-btn" class="icon-btn" title="Record">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+      </button>
+      <input type="text" id="text-input" placeholder="Speak or type your answer…" />
+      <button type="submit" id="send-btn" class="icon-btn send" title="Send">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 11.5 21 3l-8.5 18-2.4-7.6L3 11.5z"/></svg>
+      </button>
+    </form>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/chat-core.js"></script>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  let activeRole = null;
+  const initialEmpty = $("#messages").innerHTML;
+
+  const core = ChatCore({
+    mode: "interview",
+    els: {
+      messages:    $("#messages"),
+      status:      $("#status"),
+      micBtn:      $("#mic-btn"),
+      sendBtn:     $("#send-btn"),
+      input:       $("#text-input"),
+      sideList:    $("#side-list"),
+      chatTitle:   $("#chat-title"),
+      voiceSelect: $("#voice-select"),
+      speakToggle: $("#speak-toggle"),
+    },
+    beforeSend: () => activeRole ? { role_name: activeRole } : {},
+    onConvLoaded: (conv) => {
+      activeRole = conv.role_name || null;
+      $("#composer").style.display = activeRole ? "flex" : "none";
+    },
+    emptyHTML: initialEmpty,
+  });
+
+  document.querySelectorAll(".role-chip").forEach((c) => {
+    c.addEventListener("click", () => { $("#role-input").value = c.dataset.r; });
+  });
+
+  async function startSession() {
+    const role = $("#role-input").value.trim();
+    if (!role) { core.setStatus("Pick a role first.", "error"); return; }
+    core.setStatus("Starting interview…");
+    try {
+      const r = await fetch("/api/interview/start", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({role_name: role}),
+      });
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({}));
+        throw new Error(e.detail || `HTTP ${r.status}`);
+      }
+      const data = await r.json();
+      activeRole = role;
+      core.setActiveConv(data.conversation_id);
+      $("#chat-title").textContent = data.title;
+      $("#composer").style.display = "flex";
+      $("#messages").innerHTML = "";
+      core.appendMessage("assistant", data.opener);
+      if ($("#speak-toggle").checked && "speechSynthesis" in window) {
+        const u = new SpeechSynthesisUtterance(data.opener);
+        const sel = $("#voice-select");
+        const v = speechSynthesis.getVoices().find(x => x.name === sel.value);
+        if (v) u.voice = v;
+        speechSynthesis.speak(u);
+      }
+      core.setStatus("");
+      core.refreshList();
+    } catch (err) {
+      core.setStatus("Error: " + err.message, "error");
+    }
+  }
+
+  $("#start-btn").addEventListener("click", startSession);
+  $("#role-input").addEventListener("keydown", (e) => { if (e.key === "Enter") startSession(); });
+
+  $("#composer").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const t = $("#text-input").value.trim();
+    if (!t) return;
+    $("#text-input").value = "";
+    core.sendText(t);
+  });
+  $("#mic-btn").addEventListener("click", () => {
+    if (document.querySelector(".icon-btn.recording")) core.stopRec();
+    else core.startRec();
+  });
+  $("#new-btn").addEventListener("click", () => {
+    activeRole = null;
+    core.setActiveConv(null);
+    $("#chat-title").textContent = "Interview practice";
+    $("#composer").style.display = "none";
+    $("#messages").innerHTML = initialEmpty;
+    document.querySelectorAll(".role-chip").forEach((c) => {
+      c.addEventListener("click", () => { $("#role-input").value = c.dataset.r; });
+    });
+    $("#start-btn").addEventListener("click", startSession);
+    $("#role-input").addEventListener("keydown", (e) => { if (e.key === "Enter") startSession(); });
+  });
+
+  core.refreshList();
+})();
+</script>
+{% endblock %}
