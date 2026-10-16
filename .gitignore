@@ -1,11 +1,21 @@
+# Your API key - never commit it
 .env
+
+# Python
 __pycache__/
 *.pyc
-*.db
-*.db-journal
 .venv/
 venv/
+.pytest_cache/
+
+# Builds
+build/
+dist/
+*.app
+
+# IDE / OS
 .idea/
 .vscode/
+*.iml
 .DS_Store
-uploads/
+Thumbs.db

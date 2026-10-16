@@ -1,28 +1,6 @@
-# Atlas — Python dependencies
-# Install with: pip install -r requirements.txt
-
-# Web framework
-fastapi>=0.111.0
-uvicorn[standard]>=0.29.0
-
-# Templating + forms
-jinja2>=3.1.0
-python-multipart>=0.0.9
-
-# Settings & environment
-pydantic-settings>=2.2.0
-python-dotenv>=1.0.0
-
-# AI services
-openai>=1.30.0
-groq>=0.9.0
-
-# PDF text extraction
-pymupdf>=1.24.0
-
-# Auth
-bcrypt>=4.1.0
-itsdangerous>=2.1.0
-
-# Production WSGI server (used by Render / Railway Procfile)
-gunicorn>=22.0.0
+# Atlas - what the app needs.  Install: pip install -r requirements.txt
+PySide6>=6.8          # the window (Qt), and the system voices for reading answers aloud
+groq>=0.11            # the AI: Llama 3.3 for answers, Whisper for speech to text
+keyring>=24           # keeps your API key in the system keychain
+pymupdf>=1.24         # reads the text out of PDFs
+sounddevice>=0.4.6    # records from the microphone
